@@ -1,19 +1,17 @@
 #include <Arduino.h>
-#include <Stepper.h>
+#include <AccelStepper.h>
 
-#define STEPS 100
-
-Stepper stepper(STEPS, 4, 5, 3, 1);
+AccelStepper stepper(AccelStepper::HALF4WIRE, 1, 5, 3, 4);
 
 void setup() {
   // put your setup code here, to run once:
   //Serial.begin(115200);
-  stepper.setSpeed(60);
+  stepper.setMaxSpeed(1000.0);
+  // stepper.setAcceleration(100.0);
+  stepper.setSpeed(200);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  //Serial.printf("Hi");
-  stepper.step(100);
-  delay(500);
+  stepper.runSpeed();
 }
