@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
 
+// Second and Third pins should be reversed to deal with 28BYJ-48
 AccelStepper stepper(AccelStepper::HALF4WIRE, 1, 5, 3, 4);
 
 void setup() {
