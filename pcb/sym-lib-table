@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name curtains-driver-rescue)(type Legacy)(uri ${KIPRJMOD}/curtains-driver-rescue.lib)(options "")(descr ""))
+)

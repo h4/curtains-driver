@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:curtains-driver-cache
-EELAYER 26 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -26,7 +26,7 @@ F 3 "" H 7750 4650 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector:Barrel_Jack J1
+L curtains-driver-rescue:Barrel_Jack-Connector J1
 U 1 1 5C0D7D27
 P 5150 1750
 F 0 "J1" H 5205 2075 50  0000 C CNN
@@ -310,7 +310,7 @@ L Transistor_Array:ULN2003 U3
 U 1 1 5C158F48
 P 9850 4250
 F 0 "U3" H 9850 4917 50  0000 C CNN
-F 1 "ULN2003" H 9850 4826 50  0000 C CNN
+F 1 "ULN2003A" H 9850 4826 50  0000 C CNN
 F 2 "Package_SO:SOIC-16W_5.3x10.2mm_P1.27mm" H 9900 3700 50  0001 L CNN
 F 3 "http://www.ti.com/lit/ds/symlink/uln2003a.pdf" H 9950 4050 50  0001 C CNN
 	1    9850 4250
@@ -413,7 +413,7 @@ U 1 1 5C1C0250
 P 9600 5150
 F 0 "SW5" H 9500 5400 50  0000 L CNN
 F 1 "FLASH" H 9500 5300 50  0000 L CNN
-F 2 "Button_Switch_SMD:SW_SPST_B3U-1000P" H 9600 5150 50  0001 C CNN
+F 2 "Button_Switch_SMD:SW_SPST_TL3342" H 9600 5150 50  0001 C CNN
 F 3 "" H 9600 5150 50  0001 C CNN
 	1    9600 5150
 	1    0    0    -1  
@@ -477,16 +477,16 @@ Wire Wire Line
 Wire Wire Line
 	8700 5050 8700 5800
 Wire Wire Line
-	8950 3800 8950 4350
+	9050 3800 9050 4350
 Wire Wire Line
-	9050 3800 9050 4450
+	9150 3800 9150 4450
 $Comp
 L Switch:SW_SPST SW6
 U 1 1 5C1F546E
 P 6250 3750
 F 0 "SW6" H 6200 4000 50  0000 L CNN
 F 1 "RESET" H 6200 3900 50  0000 L CNN
-F 2 "Button_Switch_SMD:SW_SPST_B3U-1000P" H 6250 3750 50  0001 C CNN
+F 2 "Button_Switch_SMD:SW_SPST_TL3342" H 6250 3750 50  0001 C CNN
 F 3 "" H 6250 3750 50  0001 C CNN
 	1    6250 3750
 	1    0    0    -1  
@@ -585,15 +585,15 @@ Wire Wire Line
 Wire Wire Line
 	8650 4550 9450 4550
 Wire Wire Line
-	8650 4450 9050 4450
+	8650 4450 9150 4450
 Wire Wire Line
-	9050 4450 9450 4450
-Connection ~ 9050 4450
+	9150 4450 9450 4450
+Connection ~ 9150 4450
 Wire Wire Line
-	8650 4350 8950 4350
+	8650 4350 8800 4350
 Wire Wire Line
-	8950 4350 9450 4350
-Connection ~ 8950 4350
+	9050 4350 9450 4350
+Connection ~ 9050 4350
 Wire Wire Line
 	9850 5150 9850 4850
 Connection ~ 9850 5150
@@ -791,9 +791,9 @@ F 3 "~" H 1600 3100 50  0001 C CNN
 	1    1450 3150
 	1    0    0    -1  
 $EndComp
-Text GLabel 8950 3800 1    50   Input ~ 0
-TXD
 Text GLabel 9050 3800 1    50   Input ~ 0
+TXD
+Text GLabel 9150 3800 1    50   Input ~ 0
 RXD
 Text GLabel 3750 2950 2    50   Input ~ 0
 TXD
@@ -948,20 +948,16 @@ Wire Wire Line
 Wire Wire Line
 	1750 3250 2500 3250
 $Comp
-L Device:Crystal Y1
+L Device:Crystal_GND24_Small Y1
 U 1 1 5C2E463A
 P 2200 3650
 F 0 "Y1" H 2200 3918 50  0000 C CNN
 F 1 "HC-49" H 2200 3827 50  0000 C CNN
-F 2 "Crystal:Crystal_SMD_HC49-SD_HandSoldering" H 2200 3650 50  0001 C CNN
+F 2 "Crystal:Crystal_SMD_SeikoEpson_FA238V-4Pin_3.2x2.5mm_HandSoldering" H 2200 3650 50  0001 C CNN
 F 3 "https://www.chipdip.ru/product/12mhz-hc-49sm" H 2200 3650 50  0001 C CNN
 	1    2200 3650
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	2350 3650 2400 3650
-Wire Wire Line
-	2050 3650 1900 3650
 Wire Wire Line
 	1900 3650 1900 3450
 Wire Wire Line
@@ -1172,4 +1168,30 @@ Wire Wire Line
 	3700 2850 3750 2850
 Wire Wire Line
 	3700 2950 3750 2950
+$Comp
+L Device:R R14
+U 1 1 5C37AADA
+P 8800 4100
+F 0 "R14" H 8600 4050 50  0000 L CNN
+F 1 "10K" H 8600 4150 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 8730 4100 50  0001 C CNN
+F 3 "~" H 8800 4100 50  0001 C CNN
+	1    8800 4100
+	-1   0    0    1   
+$EndComp
+Text GLabel 8800 3800 1    50   Input ~ 0
+VCC
+Wire Wire Line
+	8800 4250 8800 4350
+Connection ~ 8800 4350
+Wire Wire Line
+	8800 4350 9050 4350
+Wire Wire Line
+	8800 3800 8800 3950
+NoConn ~ 2200 3525
+Wire Wire Line
+	1900 3650 2100 3650
+Wire Wire Line
+	2300 3650 2400 3650
+NoConn ~ 2200 3775
 $EndSCHEMATC
