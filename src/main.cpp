@@ -10,10 +10,12 @@
 
 #define EEPROM_START 0
 
-#define PIN_1 1
-#define PIN_2 3
-#define PIN_3 5
-#define PIN_4 4
+#define MOTOR_PIN_1 1
+#define MOTOR_PIN_2 3
+#define MOTOR_PIN_3 5
+#define MOTOR_PIN_4 4
+#define REED_UP 12
+#define REED_DOWN 13
 
 boolean setEEPROM = false;
 uint32_t memcrc; uint8_t *p_memcrc = (uint8_t*)&memcrc;
@@ -59,7 +61,7 @@ char default_motor_speed[4] = "200";
 
 IPAddress MQTTserver;
 // Second and Third pins should be reversed to deal with 28BYJ-48
-AccelStepper stepper(AccelStepper::HALF4WIRE, PIN_1, PIN_3, PIN_2, PIN_4);
+AccelStepper stepper(AccelStepper::HALF4WIRE, MOTOR_PIN_1, MOTOR_PIN_3, MOTOR_PIN_2, MOTOR_PIN_4);
 
 void readSettingsESP() {
 int i;
