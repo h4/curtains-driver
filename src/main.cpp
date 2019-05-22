@@ -9,6 +9,12 @@
 #include <ESP8266WebServer.h>
 
 #define EEPROM_START 0
+
+#define PIN_1 1
+#define PIN_2 3
+#define PIN_3 5
+#define PIN_4 4
+
 boolean setEEPROM = false;
 uint32_t memcrc; uint8_t *p_memcrc = (uint8_t*)&memcrc;
 
@@ -32,7 +38,6 @@ unsigned long crc_update(unsigned long crc, byte data) {
   return crc;
 }
 
-
 unsigned long crc_byte(byte *b, int len) {
   unsigned long crc = ~0L;
   uint16_t i;
@@ -54,7 +59,7 @@ char default_motor_speed[4] = "200";
 
 IPAddress MQTTserver;
 // Second and Third pins should be reversed to deal with 28BYJ-48
-AccelStepper stepper(AccelStepper::HALF4WIRE, 1, 5, 3, 4);
+AccelStepper stepper(AccelStepper::HALF4WIRE, PIN_1, PIN_3, PIN_2, PIN_4);
 
 void readSettingsESP() {
 int i;
@@ -137,12 +142,12 @@ void setupWiFi() {
 }
 
 void setupStepper() {
+  stepper.enableOutputs();
   stepper.setMaxSpeed(1000.0);
   stepper.setSpeed(atof(eeprom_data.motor_speed));
 }
 
 void setup() {
-  Serial.begin(115200);
   readSettingsESP();
   setupWiFi();
   writeSettingsESP();
