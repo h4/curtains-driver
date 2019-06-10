@@ -17,6 +17,8 @@
 #define REED_UP 12
 #define REED_DOWN 13
 
+enum class DriveDirection {UP, DOWN, NONE};
+
 boolean setEEPROM = false;
 uint32_t memcrc; uint8_t *p_memcrc = (uint8_t*)&memcrc;
 
@@ -57,7 +59,22 @@ WiFiManager wifiManager;
 
 char default_mqtt_server[40] = "";
 char default_mqtt_port[6] = "8080";
-char default_motor_speed[4] = "200";
+char default_motor_speed[4] = "300";
+
+String availability_topic = "/home/covers/" + String(ESP.getChipId()) + "/availability";
+String command_topic = "/home/covers/" + String(ESP.getChipId()) + "/set";
+String position_topic = "/home/covers/" + String(ESP.getChipId()) + "/position";
+String state_topic = "/home/covers/" + String(ESP.getChipId()) + "/state";
+
+String state_open = "open";
+String state_closed = "closed";
+int position_open = 0;
+int position_closed = 100;
+String command_open = "OPEN";
+String command_close = "CLOSE";
+String command_stop = "STOP";
+
+float motorSpeed;
 
 IPAddress MQTTserver;
 // Second and Third pins should be reversed to deal with 28BYJ-48
@@ -115,6 +132,49 @@ void writeSettingsESP() {
 void configModeCallback (WiFiManager *myWiFiManager) {
 }
 
+DriveDirection prevState = DriveDirection::NONE;
+bool longPress = false;
+int pressStart;
+
+DriveDirection readConrolButtons() {
+  int adc = analogRead(A0);
+  DriveDirection state;
+
+  if (adc < 500) {
+    state = DriveDirection::NONE;
+  } else if (adc < 900) {
+    state =  DriveDirection::DOWN;
+  } else {
+    state =  DriveDirection::UP;
+  }
+
+  if (prevState != state && state != DriveDirection::NONE) {
+    pressStart = millis();
+  }
+
+  int now = millis();
+
+  if (prevState == state && state != DriveDirection::NONE) {
+    if (now - pressStart > 500) {
+      longPress = true;
+    }
+  }
+
+  if (state == DriveDirection::NONE) {
+    if (longPress) {
+      longPress = false;
+      prevState = state;
+      return DriveDirection::NONE;
+    } else {
+      return prevState;
+    }
+  }
+
+  prevState = state;
+
+  return state;
+}
+
 void setupWiFi() {
   WiFiManager wifiManager;
   // Debug mode on
@@ -144,18 +204,58 @@ void setupWiFi() {
 }
 
 void setupStepper() {
-  stepper.enableOutputs();
   stepper.setMaxSpeed(1000.0);
-  stepper.setSpeed(atof(eeprom_data.motor_speed));
+  motorSpeed = atof(eeprom_data.motor_speed);
+  stepper.setSpeed(motorSpeed);
+}
+
+void rollUp() {
+  stepper.enableOutputs();
+  if (stepper.speed() < 0) {
+    stepper.setSpeed(motorSpeed);
+  }
+  stepper.runSpeed();
+}
+
+void rollDown() {
+  stepper.enableOutputs();
+  if (stepper.speed() > 0) {
+    stepper.setSpeed(-motorSpeed);
+  }
+  stepper.runSpeed();
+}
+
+void stop() {
+  prevState = DriveDirection::NONE;
+  stepper.stop();
+  stepper.disableOutputs();
 }
 
 void setup() {
   readSettingsESP();
-  setupWiFi();
+  //setupWiFi();
   writeSettingsESP();
   setupStepper();
+  attachInterrupt(REED_UP, stop, CHANGE);
+  attachInterrupt(REED_DOWN, stop, CHANGE);
 }
 
 void loop() {
-  stepper.runSpeed();
+  DriveDirection direction = readConrolButtons();
+
+  switch (direction)
+  {
+  case DriveDirection::UP:
+    rollUp();
+    break;
+
+  case DriveDirection::DOWN:
+    rollDown();
+    break;
+  
+  default:
+    break;
+  }
+  //stepper.runSpeed();
+  //Serial.println(readConrolButtons());
 }

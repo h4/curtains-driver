@@ -1,0 +1,25 @@
+Id,Designator,Package,Quantity,Designation,Supplier and ref,
+1,"SW2,SW1",Reed_Switch_L20mm_W3mm_P26mm,2,Reed_NC,,
+2,"J7,J6",TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal,2,Reed_1,,
+3,"J5,J4",PinHeader_1x02_P2.54mm_Horizontal,2,Conn_01x02_Male,,
+4,SW5,SW_SPST_TL3342,1,FLASH,,
+5,SW6,SW_SPST_TL3342,1,RESET,,
+6,Y1,Crystal_SMD_SeikoEpson_FA238V-4Pin_3.2x2.5mm_HandSoldering,1,HC-49,,+
+7,"R14,R11,R9,R7,R6,R5,R4,R3,R2,R1,R10",R_0805_2012Metric_Pad1.15x1.40mm_HandSolder,11,10K,,+
+8,D1,D_SMA,1,M7,,+
+9,"R12,R13",R_0805_2012Metric_Pad1.15x1.40mm_HandSolder,2,470,,+
+10,"C9,C7",C_1206_3216Metric_Pad1.42x1.75mm_HandSolder,2,22pF,,+
+11,"C10,C8,C2",C_1206_3216Metric_Pad1.42x1.75mm_HandSolder,3,10uF,,+
+12,J2,USB_Micro-B_Molex_47346-0001,1,USB_B_Micro,,+
+13,U4,SOIC-16_3.9x9.9mm_P1.27mm,1,CH340G,,+
+14,"Q2,Q1",SOT-23,2,S8050,,+
+15,"C6,C5,C3,C1",C_1206_3216Metric_Pad1.42x1.75mm_HandSolder,4,0.1uF,,+
+16,R8,R_0805_2012Metric_Pad1.15x1.40mm_HandSolder,1,56K,,
+17,SW4,TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal,1,DOWN,,
+18,SW3,TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal,1,UP,,
+19,J3,JST_XH_B05B-XH-A_1x05_P2.50mm_Vertical,1,Motor,,
+20,U1,ESP-12E_SMD,1,ESP-12F,,+
+21,C4,C_2816_7142Metric_Pad3.20x4.45mm_HandSolder,1,100uF,,+
+22,J1,BarrelJack_Horizontal_DS_201,1,Barrel_Jack,,
+23,U3,SOIC-16W_5.3x10.2mm_P1.27mm,1,ULN2003A,,+
+24,U2,SOT-223-3_TabPin2,1,LM1117-3.3,,

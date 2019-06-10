@@ -61,23 +61,23 @@ $EndComp
 $Comp
 L Switch:SW_Reed SW1
 U 1 1 5C0D94BB
-P 5200 5350
-F 0 "SW1" V 5500 5300 50  0000 R CNN
-F 1 "Reed_NC" V 5400 5300 50  0000 R CNN
-F 2 "TerminalBlock_TE-Connectivity:TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal" H 5200 5350 50  0001 C CNN
-F 3 "" H 5200 5350 50  0001 C CNN
-	1    5200 5350
+P 1650 5500
+F 0 "SW1" V 1700 5400 50  0000 R CNN
+F 1 "Reed_NC" V 1600 5400 50  0000 R CNN
+F 2 "Resistor_THT:R_Axial_Power_L20.0mm_W6.4mm_P30.48mm" H 1650 5500 50  0001 C CNN
+F 3 "" H 1650 5500 50  0001 C CNN
+	1    1650 5500
 	0    -1   -1   0   
 $EndComp
 $Comp
 L Switch:SW_Reed SW2
 U 1 1 5C0D9634
-P 6100 5400
-F 0 "SW2" V 6400 5200 50  0000 L CNN
-F 1 "Reed_NC" V 6300 5050 50  0000 L CNN
-F 2 "TerminalBlock_TE-Connectivity:TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal" H 6100 5400 50  0001 C CNN
-F 3 "" H 6100 5400 50  0001 C CNN
-	1    6100 5400
+P 1650 6275
+F 0 "SW2" V 1700 6025 50  0000 L CNN
+F 1 "Reed_NC" V 1600 5850 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_Power_L20.0mm_W6.4mm_P30.48mm" H 1650 6275 50  0001 C CNN
+F 3 "" H 1650 6275 50  0001 C CNN
+	1    1650 6275
 	0    -1   -1   0   
 $EndComp
 $Comp
@@ -160,8 +160,6 @@ NoConn ~ 7700 5550
 NoConn ~ 7800 5550
 NoConn ~ 7900 5550
 NoConn ~ 8000 5550
-Wire Wire Line
-	6100 4950 6100 5200
 $Comp
 L power:Earth #PWR0107
 U 1 1 5C0E7D21
@@ -184,10 +182,6 @@ F 3 "~" H 5200 5850 50  0001 C CNN
 	1    5200 5850
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	6100 5600 6100 5850
-Wire Wire Line
-	5200 5550 5200 5850
 $Comp
 L Device:C C2
 U 1 1 5C0E960D
@@ -258,12 +252,12 @@ $EndComp
 $Comp
 L Device:C C1
 U 1 1 5C14C6AA
-P 5650 5350
-F 0 "C1" H 5765 5396 50  0000 L CNN
-F 1 "0.1uF" H 5765 5305 50  0000 L CNN
-F 2 "Capacitor_SMD:C_1206_3216Metric_Pad1.42x1.75mm_HandSolder" H 5688 5200 50  0001 C CNN
-F 3 "~" H 5650 5350 50  0001 C CNN
-	1    5650 5350
+P 5425 5350
+F 0 "C1" H 5540 5396 50  0000 L CNN
+F 1 "0.1uF" H 5540 5305 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric_Pad1.42x1.75mm_HandSolder" H 5463 5200 50  0001 C CNN
+F 3 "~" H 5425 5350 50  0001 C CNN
+	1    5425 5350
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -282,16 +276,16 @@ $EndComp
 $Comp
 L power:Earth #PWR0115
 U 1 1 5C152829
-P 5650 5850
-F 0 "#PWR0115" H 5650 5600 50  0001 C CNN
-F 1 "Earth" H 5650 5700 50  0001 C CNN
-F 2 "" H 5650 5850 50  0001 C CNN
-F 3 "~" H 5650 5850 50  0001 C CNN
-	1    5650 5850
+P 5425 5850
+F 0 "#PWR0115" H 5425 5600 50  0001 C CNN
+F 1 "Earth" H 5425 5700 50  0001 C CNN
+F 2 "" H 5425 5850 50  0001 C CNN
+F 3 "~" H 5425 5850 50  0001 C CNN
+	1    5425 5850
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	5650 5500 5650 5850
+	5425 5500 5425 5850
 Wire Wire Line
 	6550 5550 6550 5850
 $Comp
@@ -458,9 +452,7 @@ Wire Wire Line
 Wire Wire Line
 	8950 2250 9400 2250
 Wire Wire Line
-	5200 4850 5200 5150
-Wire Wire Line
-	5650 4850 5650 5200
+	5425 4850 5425 5200
 $Comp
 L power:+3.3V #PWR0109
 U 1 1 5C0E1C36
@@ -503,8 +495,8 @@ F 3 "~" H 5850 3850 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	5200 4850 5650 4850
-Connection ~ 5650 4850
+	5200 4850 5425 4850
+Connection ~ 5425 4850
 Wire Wire Line
 	6100 4950 6550 4950
 Connection ~ 6550 4950
@@ -600,7 +592,7 @@ Connection ~ 9850 5150
 Wire Wire Line
 	6300 4850 6300 4400
 Wire Wire Line
-	5650 4850 6300 4850
+	5425 4850 6300 4850
 Connection ~ 6300 4850
 Wire Wire Line
 	6300 4850 6850 4850
@@ -1194,4 +1186,88 @@ Wire Wire Line
 Wire Wire Line
 	2300 3650 2400 3650
 NoConn ~ 2200 3775
+$Comp
+L Connector:Screw_Terminal_01x02 J6
+U 1 1 5CABFAC7
+P 5000 5300
+F 0 "J6" H 5000 5525 50  0000 C CNN
+F 1 "Reed_1" H 5000 5425 50  0000 C CNN
+F 2 "TerminalBlock_TE-Connectivity:TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal" H 5000 5300 50  0001 C CNN
+F 3 "~" H 5000 5300 50  0001 C CNN
+	1    5000 5300
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	5200 4850 5200 5300
+Wire Wire Line
+	5200 5400 5200 5850
+$Comp
+L Connector:Screw_Terminal_01x02 J7
+U 1 1 5CAF933C
+P 5900 5275
+F 0 "J7" H 5900 5500 50  0000 C CNN
+F 1 "Reed_1" H 5900 5400 50  0000 C CNN
+F 2 "TerminalBlock_TE-Connectivity:TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal" H 5900 5275 50  0001 C CNN
+F 3 "~" H 5900 5275 50  0001 C CNN
+	1    5900 5275
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	6100 4950 6100 5275
+Wire Wire Line
+	6100 5375 6100 5850
+$Comp
+L Connector:Conn_01x02_Male J4
+U 1 1 5CB2C5B6
+P 2450 5450
+F 0 "J4" H 2422 5424 50  0000 R CNN
+F 1 "Conn_01x02_Male" H 2422 5333 50  0000 R CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 2450 5450 50  0001 C CNN
+F 3 "~" H 2450 5450 50  0001 C CNN
+	1    2450 5450
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Connector:Conn_01x02_Male J5
+U 1 1 5CB348F6
+P 2475 6225
+F 0 "J5" H 2447 6199 50  0000 R CNN
+F 1 "Conn_01x02_Male" H 2447 6108 50  0000 R CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 2475 6225 50  0001 C CNN
+F 3 "~" H 2475 6225 50  0001 C CNN
+	1    2475 6225
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	1650 5300 1650 5200
+Wire Wire Line
+	1650 5200 2250 5200
+Wire Wire Line
+	2250 5200 2250 5450
+Wire Wire Line
+	1650 5700 1650 5800
+Wire Wire Line
+	1650 5800 2250 5800
+Wire Wire Line
+	2250 5800 2250 5550
+Wire Wire Line
+	1650 6075 1650 5975
+Wire Wire Line
+	1650 5975 2275 5975
+Wire Wire Line
+	2275 5975 2275 6225
+Wire Wire Line
+	1650 6475 1650 6550
+Wire Wire Line
+	1650 6550 2275 6550
+Wire Wire Line
+	2275 6550 2275 6325
+Text Label 1650 5200 0    50   ~ 0
+reed_in_1
+Text Label 1650 5800 0    50   ~ 0
+reed_out_1
+Text Label 1650 5975 0    50   ~ 0
+reed_in_2
+Text Label 1650 6550 0    50   ~ 0
+reed_out_2
 $EndSCHEMATC
