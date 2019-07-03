@@ -17,7 +17,8 @@
 #define REED_UP 12
 #define REED_DOWN 13
 
-enum class DriveDirection {UP, DOWN, NONE};
+enum class ButtonState {BTN_UP, BTN_DOWN, BTN_NONE};
+enum class DriveDirection {DRIVE_UP, DRIVE_DOWN, DRIVE_NONE};
 
 boolean setEEPROM = false;
 uint32_t memcrc; uint8_t *p_memcrc = (uint8_t*)&memcrc;
@@ -64,7 +65,7 @@ char default_motor_speed[4] = "300";
 String availability_topic = "/home/covers/" + String(ESP.getChipId()) + "/availability";
 String command_topic = "/home/covers/" + String(ESP.getChipId()) + "/set";
 String position_topic = "/home/covers/" + String(ESP.getChipId()) + "/position";
-String state_topic = "/home/covers/" + String(ESP.getChipId()) + "/state";
+String state_topic = "/home/covers/" + String(ESP.getChipId()) + "/ButtonState";
 
 String state_open = "open";
 String state_closed = "closed";
@@ -132,48 +133,8 @@ void writeSettingsESP() {
 void configModeCallback (WiFiManager *myWiFiManager) {
 }
 
-DriveDirection prevState = DriveDirection::NONE;
-bool longPress = false;
-int pressStart;
-
-DriveDirection readConrolButtons() {
-  int adc = analogRead(A0);
-  DriveDirection state;
-
-  if (adc < 500) {
-    state = DriveDirection::NONE;
-  } else if (adc < 900) {
-    state =  DriveDirection::DOWN;
-  } else {
-    state =  DriveDirection::UP;
-  }
-
-  if (prevState != state && state != DriveDirection::NONE) {
-    pressStart = millis();
-  }
-
-  int now = millis();
-
-  if (prevState == state && state != DriveDirection::NONE) {
-    if (now - pressStart > 500) {
-      longPress = true;
-    }
-  }
-
-  if (state == DriveDirection::NONE) {
-    if (longPress) {
-      longPress = false;
-      prevState = state;
-      return DriveDirection::NONE;
-    } else {
-      return prevState;
-    }
-  }
-
-  prevState = state;
-
-  return state;
-}
+ButtonState prevButtonState = ButtonState::BTN_NONE;
+DriveDirection prevDriveDirection = DriveDirection::DRIVE_NONE;
 
 void setupWiFi() {
   WiFiManager wifiManager;
@@ -206,29 +167,43 @@ void setupWiFi() {
 void setupStepper() {
   stepper.setMaxSpeed(1000.0);
   motorSpeed = atof(eeprom_data.motor_speed);
-  stepper.setSpeed(motorSpeed);
+}
+
+void roll(bool isReversed) {
+  int speed = isReversed ? -motorSpeed : motorSpeed;
+  stepper.enableOutputs();
+  stepper.setSpeed(speed);
+  stepper.runSpeed();
 }
 
 void rollUp() {
-  stepper.enableOutputs();
-  if (stepper.speed() < 0) {
-    stepper.setSpeed(motorSpeed);
-  }
-  stepper.runSpeed();
+  roll(false);
 }
 
 void rollDown() {
-  stepper.enableOutputs();
-  if (stepper.speed() > 0) {
-    stepper.setSpeed(-motorSpeed);
-  }
-  stepper.runSpeed();
+  roll(true);
 }
 
 void stop() {
-  prevState = DriveDirection::NONE;
+  prevDriveDirection = DriveDirection::DRIVE_NONE;
   stepper.stop();
   stepper.disableOutputs();
+}
+
+void readConrolButtons() {
+  int adc = analogRead(A0);
+  ButtonState buttonState;
+
+  if (adc < 500) {
+    buttonState = ButtonState::BTN_NONE;
+  } else {
+    if (adc < 900) {
+      prevDriveDirection = DriveDirection::DRIVE_DOWN;
+    } else {
+      prevDriveDirection = DriveDirection::DRIVE_UP;
+    }
+    delay(50);
+  }
 }
 
 void setup() {
@@ -241,21 +216,18 @@ void setup() {
 }
 
 void loop() {
-  DriveDirection direction = readConrolButtons();
+  readConrolButtons();
 
-  switch (direction)
-  {
-  case DriveDirection::UP:
+  switch (prevDriveDirection) {
+  case DriveDirection::DRIVE_UP:
     rollUp();
     break;
 
-  case DriveDirection::DOWN:
+  case DriveDirection::DRIVE_DOWN:
     rollDown();
     break;
   
   default:
     break;
   }
-  //stepper.runSpeed();
-  //Serial.println(readConrolButtons());
 }
