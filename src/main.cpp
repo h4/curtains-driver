@@ -184,7 +184,7 @@ void rollDown() {
   roll(true);
 }
 
-void stop() {
+ICACHE_RAM_ATTR void stop() {
   prevDriveDirection = DriveDirection::DRIVE_NONE;
   stepper.stop();
   stepper.disableOutputs();
