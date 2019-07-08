@@ -372,7 +372,7 @@ L Device:R R8
 U 1 1 5C16B88E
 P 8950 1850
 F 0 "R8" H 8750 1800 50  0000 L CNN
-F 1 "56K" H 8700 1900 50  0000 L CNN
+F 1 "10K" H 8700 1900 50  0000 L CNN
 F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 8880 1850 50  0001 C CNN
 F 3 "~" H 8950 1850 50  0001 C CNN
 	1    8950 1850
@@ -450,7 +450,7 @@ Wire Wire Line
 Wire Wire Line
 	8950 2650 8950 2750
 Wire Wire Line
-	8950 2250 9400 2250
+	8950 2250 9025 2250
 Wire Wire Line
 	5425 4850 5425 5200
 $Comp
@@ -748,7 +748,7 @@ L Device:C C6
 U 1 1 5C20E8C4
 P 9400 2500
 F 0 "C6" H 9515 2546 50  0000 L CNN
-F 1 "0.1uF" H 9515 2455 50  0000 L CNN
+F 1 "10nF" H 9515 2455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_1206_3216Metric_Pad1.42x1.75mm_HandSolder" H 9438 2350 50  0001 C CNN
 F 3 "~" H 9400 2500 50  0001 C CNN
 	1    9400 2500
@@ -1045,7 +1045,7 @@ Connection ~ 9350 4750
 Text GLabel 9350 3800 1    50   Input ~ 0
 GPIO0
 $Comp
-L Transistor_BJT:S8050 Q2
+L Device:Q_NPN_BEC Q2
 U 1 1 5C3778E4
 P 4350 4050
 F 0 "Q2" H 4541 4004 50  0000 L CNN
@@ -1054,17 +1054,6 @@ F 2 "Package_TO_SOT_SMD:SOT-23" H 4550 3975 50  0001 L CIN
 F 3 "http://www.unisonic.com.tw/datasheet/S8050.pdf" H 4350 4050 50  0001 L CNN
 	1    4350 4050
 	1    0    0    1   
-$EndComp
-$Comp
-L Transistor_BJT:S8050 Q1
-U 1 1 5C37813C
-P 4350 3400
-F 0 "Q1" H 4541 3446 50  0000 L CNN
-F 1 "S8050" H 4541 3355 50  0000 L CNN
-F 2 "Package_TO_SOT_SMD:SOT-23" H 4550 3325 50  0001 L CIN
-F 3 "http://www.unisonic.com.tw/datasheet/S8050.pdf" H 4350 3400 50  0001 L CNN
-	1    4350 3400
-	1    0    0    -1  
 $EndComp
 Text GLabel 4450 4400 3    50   Input ~ 0
 GPIO0
@@ -1270,4 +1259,32 @@ Text Label 1650 5975 0    50   ~ 0
 reed_in_2
 Text Label 1650 6550 0    50   ~ 0
 reed_out_2
+$Comp
+L Device:R R15
+U 1 1 5D240269
+P 9175 2250
+F 0 "R15" V 9375 2300 50  0000 R CNN
+F 1 "1K" V 9275 2175 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 9105 2250 50  0001 C CNN
+F 3 "~" H 9175 2250 50  0001 C CNN
+	1    9175 2250
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	9325 2250 9400 2250
+Text Label 1750 3150 0    50   ~ 0
+D+
+Text Label 1750 3250 0    50   ~ 0
+D-
+$Comp
+L Device:Q_NPN_BEC Q1
+U 1 1 5C37813C
+P 4350 3400
+F 0 "Q1" H 4541 3446 50  0000 L CNN
+F 1 "S8050" H 4541 3355 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 4550 3325 50  0001 L CIN
+F 3 "http://www.unisonic.com.tw/datasheet/S8050.pdf" H 4350 3400 50  0001 L CNN
+	1    4350 3400
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
