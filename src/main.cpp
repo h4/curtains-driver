@@ -3,8 +3,7 @@
 #include <EEPROM.h>
 #include <MQTT.h>
 #include <PubSubClient.h>
-// https://github.com/tzapu/WiFiManager
-#include <WiFiManager.h>
+#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 
@@ -21,7 +20,8 @@ enum class ButtonState {BTN_UP, BTN_DOWN, BTN_NONE};
 enum class DriveDirection {DRIVE_UP, DRIVE_DOWN, DRIVE_NONE};
 
 boolean setEEPROM = false;
-uint32_t memcrc; uint8_t *p_memcrc = (uint8_t*)&memcrc;
+uint32_t memcrc; 
+uint8_t *p_memcrc = (uint8_t*)&memcrc;
 
 struct eeprom_data_t {
   char mqtt_server[40];
@@ -62,10 +62,13 @@ char default_mqtt_server[40] = "";
 char default_mqtt_port[6] = "8080";
 char default_motor_speed[4] = "300";
 
-String availability_topic = "/home/covers/" + String(ESP.getChipId()) + "/availability";
-String command_topic = "/home/covers/" + String(ESP.getChipId()) + "/set";
-String position_topic = "/home/covers/" + String(ESP.getChipId()) + "/position";
-String state_topic = "/home/covers/" + String(ESP.getChipId()) + "/ButtonState";
+String chipId = String(ESP.getChipId());
+String topicPrefix = "/home/covers/" + chipId;
+
+String availability_topic = topicPrefix + "/availability";
+String command_topic = topicPrefix + "/set";
+String position_topic = topicPrefix + "/position";
+String state_topic = topicPrefix + "/ButtonState";
 
 String state_open = "open";
 String state_closed = "closed";
@@ -137,6 +140,9 @@ ButtonState prevButtonState = ButtonState::BTN_NONE;
 DriveDirection prevDriveDirection = DriveDirection::DRIVE_NONE;
 
 void setupWiFi() {
+  String deviceName = "Curtain_" + String(ESP.getChipId());
+  WiFi.hostname(deviceName);
+
   WiFiManager wifiManager;
   // Debug mode on
   // wifiManager.resetSettings();
@@ -150,9 +156,7 @@ void setupWiFi() {
   wifiManager.addParameter(&custom_mqtt_port);
   wifiManager.addParameter(&custom_motor_speed);
 
-  String ssid = "Curtain_" + String(ESP.getChipId());
-
-  if (!wifiManager.autoConnect(ssid.c_str(), "password")) {
+  if (!wifiManager.autoConnect(deviceName.c_str(), "password")) {
     ESP.reset();
     delay(1000);
   }
@@ -190,33 +194,65 @@ ICACHE_RAM_ATTR void stop() {
   stepper.disableOutputs();
 }
 
-void readConrolButtons() {
-  int adc = analogRead(A0);
-  ButtonState buttonState;
+int prevAdc;
 
-  if (adc < 500) {
-    buttonState = ButtonState::BTN_NONE;
-  } else {
-    if (adc < 900) {
-      prevDriveDirection = DriveDirection::DRIVE_DOWN;
-    } else {
-      prevDriveDirection = DriveDirection::DRIVE_UP;
-    }
-    delay(50);
+ButtonState readConrolButtons() {
+  int adc = analogRead(A0);
+
+  if (adc < 300) {
+    return ButtonState::BTN_NONE;
   }
+
+  if (abs(prevAdc - adc) > 100) {
+    if (adc > prevAdc) {
+      if (adc > 900) {
+        return ButtonState::BTN_UP;
+      }
+
+      if (adc > 500 && adc < 700) {
+        return ButtonState::BTN_DOWN;
+      }
+    }
+    prevAdc = adc;
+  }
+
+  return ButtonState::BTN_NONE;
 }
 
 void setup() {
-  readSettingsESP();
-  //setupWiFi();
-  writeSettingsESP();
+  Serial.begin(115200);
+
+//  readSettingsESP();
+//  setupWiFi();
+//  writeSettingsESP();
   setupStepper();
   attachInterrupt(REED_UP, stop, CHANGE);
   attachInterrupt(REED_DOWN, stop, CHANGE);
 }
 
 void loop() {
-  readConrolButtons();
+  ButtonState buttonState = readConrolButtons();
+
+  if (buttonState != prevButtonState) {
+    switch (buttonState)
+    {
+    case ButtonState::BTN_UP:
+      Serial.println("UP");
+      break;
+    
+    case ButtonState::BTN_DOWN:
+      Serial.println("DOWN");
+      break;
+    
+    default:
+      Serial.println("STOP");
+      break;
+    }
+
+    prevButtonState = buttonState;
+  }
+
+  return;
 
   switch (prevDriveDirection) {
   case DriveDirection::DRIVE_UP:
