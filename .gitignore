@@ -6,3 +6,4 @@
 .vscode/launch.json
 
 *.bak
+*.kicad_pcb-bak
