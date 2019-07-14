@@ -133,8 +133,7 @@ void writeSettingsESP() {
   EEPROM.commit();
 }
 
-void configModeCallback (WiFiManager *myWiFiManager) {
-}
+void configModeCallback (WiFiManager *myWiFiManager) {}
 
 ButtonState prevButtonState = ButtonState::BTN_NONE;
 DriveDirection prevDriveDirection = DriveDirection::DRIVE_NONE;
@@ -199,24 +198,42 @@ int prevAdc;
 ButtonState readConrolButtons() {
   int adc = analogRead(A0);
 
-  if (adc < 300) {
-    return ButtonState::BTN_NONE;
+  if (adc > 700) {
+    return ButtonState::BTN_UP;
   }
 
-  if (abs(prevAdc - adc) > 100) {
-    if (adc > prevAdc) {
-      if (adc > 900) {
-        return ButtonState::BTN_UP;
-      }
-
-      if (adc > 500 && adc < 700) {
-        return ButtonState::BTN_DOWN;
-      }
-    }
-    prevAdc = adc;
+  if (adc > 300) {
+    return ButtonState::BTN_DOWN;
   }
 
   return ButtonState::BTN_NONE;
+}
+
+void logButtonState(ButtonState state) {
+  switch (state)
+    {
+    case ButtonState::BTN_UP:
+      Serial.println("UP");
+      break;
+    
+    case ButtonState::BTN_DOWN:
+      Serial.println("DOWN");
+      break;
+    
+    default:
+      Serial.println("STOP");
+      break;
+    }
+}
+
+int prev = 0;
+
+void ICACHE_RAM_ATTR onTimerISR(){
+    ButtonState btnState = readConrolButtons();
+
+    logButtonState(btnState);
+
+    timer1_write(600000);//12us
 }
 
 void setup() {
@@ -226,11 +243,17 @@ void setup() {
 //  setupWiFi();
 //  writeSettingsESP();
   setupStepper();
+  
+  timer1_attachInterrupt(onTimerISR);
+  timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+  timer1_write(600000);
   attachInterrupt(REED_UP, stop, CHANGE);
   attachInterrupt(REED_DOWN, stop, CHANGE);
 }
 
 void loop() {
+  return;
+
   ButtonState buttonState = readConrolButtons();
 
   if (buttonState != prevButtonState) {
