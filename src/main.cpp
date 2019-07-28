@@ -15,8 +15,10 @@
 #define MOTOR_PIN_4 4
 #define REED_UP 12
 #define REED_DOWN 13
+#define LONG_PRESS_TIMEOUT 500
 
-enum class ButtonState {BTN_UP, BTN_DOWN, BTN_NONE};
+enum class ButtonState {BTN_UP, BTN_DOWN, BTN_NONE, BTN_UP_LONG, BTN_DOWN_LONG, BTN_RELEASE_LONG};
+enum class MotorState {DRIVE_UP, DRIVE_DOWN, STOPPED};
 enum class DriveDirection {DRIVE_UP, DRIVE_DOWN, DRIVE_NONE};
 
 boolean setEEPROM = false;
@@ -135,7 +137,7 @@ void writeSettingsESP() {
 
 void configModeCallback (WiFiManager *myWiFiManager) {}
 
-ButtonState prevButtonState = ButtonState::BTN_NONE;
+MotorState currentMotorState = MotorState::STOPPED;
 DriveDirection prevDriveDirection = DriveDirection::DRIVE_NONE;
 
 void setupWiFi() {
@@ -174,28 +176,46 @@ void setupStepper() {
 
 void roll(bool isReversed) {
   int speed = isReversed ? -motorSpeed : motorSpeed;
+
+  Serial.print("Drive with speed ");
+  Serial.println(speed);
+  return;
   stepper.enableOutputs();
   stepper.setSpeed(speed);
   stepper.runSpeed();
 }
 
 void rollUp() {
-  roll(false);
+  if (currentMotorState != MotorState::DRIVE_UP) {
+    roll(false);
+  }
+  currentMotorState = MotorState::DRIVE_UP;
 }
 
 void rollDown() {
-  roll(true);
+  if (currentMotorState != MotorState::DRIVE_DOWN) {
+    roll(true);
+  }
+  currentMotorState = MotorState::DRIVE_DOWN;
 }
 
 ICACHE_RAM_ATTR void stop() {
-  prevDriveDirection = DriveDirection::DRIVE_NONE;
+  if (currentMotorState != MotorState::STOPPED) {
+    Serial.println("Stop motor");
+  }
+  currentMotorState = MotorState::STOPPED;
+  return;
   stepper.stop();
   stepper.disableOutputs();
 }
 
 int prevAdc;
+ButtonState prevButtonState = ButtonState::BTN_NONE;
+ButtonState currentButtonState = ButtonState::BTN_NONE;
+long prevStateChange = millis();
+bool longPressed = false;
 
-ButtonState readConrolButtons() {
+ButtonState getCurrentButtonState() {
   int adc = analogRead(A0);
 
   if (adc > 700) {
@@ -209,9 +229,45 @@ ButtonState readConrolButtons() {
   return ButtonState::BTN_NONE;
 }
 
+ButtonState detectLongPress(ButtonState btnState) {
+  long now = millis();
+  if (prevButtonState != btnState) {
+    if (longPressed) {
+      btnState = ButtonState::BTN_RELEASE_LONG;
+      longPressed = false;
+    }
+
+    prevStateChange = now;
+    prevButtonState = btnState;
+  }
+  long delta = now - prevStateChange;
+
+  if (delta > LONG_PRESS_TIMEOUT) {
+    switch (btnState) {
+    case ButtonState::BTN_DOWN:
+      btnState = ButtonState::BTN_DOWN_LONG;
+      longPressed = true;
+      break;
+
+    case ButtonState::BTN_UP:
+      btnState = ButtonState::BTN_UP_LONG;
+      longPressed = true;
+
+    default:
+      break;
+    }
+  }
+
+  return btnState;
+}
+
+ButtonState getControlButtonState() {
+  ButtonState _state = getCurrentButtonState();
+  return detectLongPress(_state);
+}
+
 void logButtonState(ButtonState state) {
-  switch (state)
-    {
+  switch (state) {
     case ButtonState::BTN_UP:
       Serial.println("UP");
       break;
@@ -220,61 +276,69 @@ void logButtonState(ButtonState state) {
       Serial.println("DOWN");
       break;
     
+    case ButtonState::BTN_DOWN_LONG:
+      Serial.println("DOWN_LONG");
+      break;
+    
+    case ButtonState::BTN_UP_LONG:
+      Serial.println("UP_LONG");
+      break;
+
+    case ButtonState::BTN_RELEASE_LONG:
+      Serial.println("RELEASE LONG");
+      break;
+    
     default:
       Serial.println("STOP");
       break;
     }
 }
 
-int prev = 0;
+void driveMotor() {
+  switch (currentButtonState) {
+    case ButtonState::BTN_UP:
+      rollUp();
+      break;
 
-void ICACHE_RAM_ATTR onTimerISR(){
-    ButtonState btnState = readConrolButtons();
+    case ButtonState::BTN_DOWN:
+      rollDown();
+      break;
 
-    logButtonState(btnState);
+    case ButtonState::BTN_RELEASE_LONG:
+      stop();
+      break;
 
-    timer1_write(600000);//12us
+    case ButtonState::BTN_NONE:
+    case ButtonState::BTN_DOWN_LONG:
+    case ButtonState::BTN_UP_LONG:
+      break;
+  }
+}
+
+void ICACHE_RAM_ATTR onTimerISR() {
+  currentButtonState = getControlButtonState();
+  timer1_write(600000);//12us
 }
 
 void setup() {
   Serial.begin(115200);
+  motorSpeed = 200;
 
 //  readSettingsESP();
 //  setupWiFi();
 //  writeSettingsESP();
-  setupStepper();
+//  setupStepper();
   
   timer1_attachInterrupt(onTimerISR);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   timer1_write(600000);
+
   attachInterrupt(REED_UP, stop, CHANGE);
   attachInterrupt(REED_DOWN, stop, CHANGE);
 }
 
 void loop() {
-  return;
-
-  ButtonState buttonState = readConrolButtons();
-
-  if (buttonState != prevButtonState) {
-    switch (buttonState)
-    {
-    case ButtonState::BTN_UP:
-      Serial.println("UP");
-      break;
-    
-    case ButtonState::BTN_DOWN:
-      Serial.println("DOWN");
-      break;
-    
-    default:
-      Serial.println("STOP");
-      break;
-    }
-
-    prevButtonState = buttonState;
-  }
-
+  driveMotor();
   return;
 
   switch (prevDriveDirection) {
