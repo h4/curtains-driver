@@ -17,6 +17,9 @@
 #define REED_DOWN 13
 #define LONG_PRESS_TIMEOUT 500
 
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+
 enum class ButtonState {BTN_UP, BTN_DOWN, BTN_NONE, BTN_UP_LONG, BTN_DOWN_LONG, BTN_RELEASE_LONG};
 enum class MotorState {DRIVE_UP, DRIVE_DOWN, STOPPED};
 enum class DriveDirection {DRIVE_UP, DRIVE_DOWN, DRIVE_NONE};
@@ -64,18 +67,19 @@ char default_mqtt_server[40] = "";
 char default_mqtt_port[6] = "8080";
 char default_motor_speed[4] = "300";
 
-String chipId = String(ESP.getChipId());
-String topicPrefix = "/home/covers/" + chipId;
+String device_name = "Cover_" + String(ESP.getChipId());
+String topicPrefix = "home/covers/" + device_name;
 
 String availability_topic = topicPrefix + "/availability";
 String command_topic = topicPrefix + "/set";
 String position_topic = topicPrefix + "/position";
-String state_topic = topicPrefix + "/ButtonState";
 
-String state_open = "open";
-String state_closed = "closed";
-int position_open = 0;
-int position_closed = 100;
+// TODO: this topics are unusual
+String state_topic = topicPrefix + "/buttonState";
+String config_topic = topicPrefix + "/config";
+
+int position_open = 100;
+int position_closed = 0;
 String command_open = "OPEN";
 String command_close = "CLOSE";
 String command_stop = "STOP";
@@ -140,38 +144,19 @@ void configModeCallback (WiFiManager *myWiFiManager) {}
 MotorState currentMotorState = MotorState::STOPPED;
 DriveDirection prevDriveDirection = DriveDirection::DRIVE_NONE;
 
-void setupWiFi() {
-  String deviceName = "Curtain_" + String(ESP.getChipId());
-  WiFi.hostname(deviceName);
-
-  WiFiManager wifiManager;
-  // Debug mode on
-  // wifiManager.resetSettings();
-  wifiManager.setAPCallback(configModeCallback);
-
-  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", eeprom_data.mqtt_server, 40);
-  WiFiManagerParameter custom_mqtt_port("port", "mqtt port", eeprom_data.mqtt_port, 6);
-  WiFiManagerParameter custom_motor_speed("speed", "motor speed", eeprom_data.motor_speed, 4);
-
-  wifiManager.addParameter(&custom_mqtt_server);
-  wifiManager.addParameter(&custom_mqtt_port);
-  wifiManager.addParameter(&custom_motor_speed);
-
-  if (!wifiManager.autoConnect(deviceName.c_str(), "password")) {
-    ESP.reset();
-    delay(1000);
-  }
-
-  strcpy(eeprom_data.mqtt_server, custom_mqtt_server.getValue());
-  strcpy(eeprom_data.mqtt_port, custom_mqtt_port.getValue());
-  strcpy(eeprom_data.motor_speed, custom_motor_speed.getValue());
-
-  WiFi.enableAP(0);
-}
-
 void setupStepper() {
   stepper.setMaxSpeed(1000.0);
   motorSpeed = atof(eeprom_data.motor_speed);
+}
+
+ICACHE_RAM_ATTR void stop() {
+  if (currentMotorState != MotorState::STOPPED) {
+    Serial.println("Stop motor");
+  }
+  currentMotorState = MotorState::STOPPED;
+  return;
+  stepper.stop();
+  stepper.disableOutputs();
 }
 
 void roll(bool isReversed) {
@@ -199,14 +184,108 @@ void rollDown() {
   currentMotorState = MotorState::DRIVE_DOWN;
 }
 
-ICACHE_RAM_ATTR void stop() {
-  if (currentMotorState != MotorState::STOPPED) {
-    Serial.println("Stop motor");
+ICACHE_RAM_ATTR void onOpen() {
+  stop();
+  char buffer [3];
+  mqttClient.publish(position_topic.c_str(), itoa(position_open, buffer, 10));
+}
+
+ICACHE_RAM_ATTR void onClosed() {
+  stop();
+  char buffer [3];
+  mqttClient.publish(position_topic.c_str(), itoa(position_closed, buffer, 10));
+}
+
+void setupWiFi() {
+  WiFi.hostname(device_name);
+
+  WiFiManager wifiManager;
+  // Debug mode on
+  // ifiManager.resetSettings();
+  wifiManager.setAPCallback(configModeCallback);
+
+  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", eeprom_data.mqtt_server, 40);
+  WiFiManagerParameter custom_mqtt_port("port", "mqtt port", eeprom_data.mqtt_port, 6);
+  WiFiManagerParameter custom_motor_speed("speed", "motor speed", eeprom_data.motor_speed, 4);
+
+  wifiManager.addParameter(&custom_mqtt_server);
+  wifiManager.addParameter(&custom_mqtt_port);
+  wifiManager.addParameter(&custom_motor_speed);
+
+  if (!wifiManager.autoConnect(device_name.c_str(), "password")) {
+    ESP.reset();
+    delay(1000);
   }
-  currentMotorState = MotorState::STOPPED;
-  return;
-  stepper.stop();
-  stepper.disableOutputs();
+
+  strcpy(eeprom_data.mqtt_server, custom_mqtt_server.getValue());
+  strcpy(eeprom_data.mqtt_port, custom_mqtt_port.getValue());
+  strcpy(eeprom_data.motor_speed, custom_motor_speed.getValue());
+
+  WiFi.enableAP(0);
+}
+
+void mqttCallback(char* topic, byte* payload, int length) {
+  String command;
+  for (int i=0; i < length; i++) {
+    command += (char)payload[i];
+  }
+
+  if (command == command_open) {
+    rollUp();
+  } else if (command == command_close) {
+    rollDown();
+  } else if (command == command_stop) {
+    stop();
+  }
+}
+
+void setupMQTTClient() {
+  // mqttClient.setServer(eeprom_data.mqtt_server, atoi(eeprom_data.mqtt_port));
+  mqttClient.setServer("192.168.2.100", 1883);
+  mqttClient.setCallback(mqttCallback);
+}
+
+void reconnectMqtt() {
+  // Loop until we're reconnected
+  while (!mqttClient.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    Serial.print(" Current state = ");
+    Serial.println(mqttClient.state());
+    
+    // Attempt to connect
+    String client_id = device_name + "_";
+    client_id += String(random(0xffff), HEX);
+    if (mqttClient.connect(client_id.c_str())) {
+      Serial.println("connected");
+
+      String config = "{\"state_topic\":\"" + state_topic + "\",\"availability_topic\":\"" + availability_topic + "\",\"command_topic\":\"" + command_topic + "\",\"position_topic\":\"" + position_topic + "\",\"device_class\":\"cover\",\"name\":\"" + device_name + "\"}";
+      
+      bool published = mqttClient.publish(config_topic.c_str(), config.c_str());
+      Serial.println(config.c_str());
+      Serial.println(sizeof(config.c_str()));
+
+      Serial.println("Published Config: ");
+      Serial.println(published);
+      if (published) {
+        Serial.println(config);
+      }
+      String payload = "online";
+      published = mqttClient.publish(availability_topic.c_str(), payload.c_str());
+      if (published) {
+        Serial.println(payload);
+      } else {
+        Serial.println("Can't publish");
+      }
+
+      mqttClient.subscribe(command_topic.c_str());
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
 }
 
 int prevAdc;
@@ -266,34 +345,6 @@ ButtonState getControlButtonState() {
   return detectLongPress(_state);
 }
 
-void logButtonState(ButtonState state) {
-  switch (state) {
-    case ButtonState::BTN_UP:
-      Serial.println("UP");
-      break;
-    
-    case ButtonState::BTN_DOWN:
-      Serial.println("DOWN");
-      break;
-    
-    case ButtonState::BTN_DOWN_LONG:
-      Serial.println("DOWN_LONG");
-      break;
-    
-    case ButtonState::BTN_UP_LONG:
-      Serial.println("UP_LONG");
-      break;
-
-    case ButtonState::BTN_RELEASE_LONG:
-      Serial.println("RELEASE LONG");
-      break;
-    
-    default:
-      Serial.println("STOP");
-      break;
-    }
-}
-
 void driveMotor() {
   switch (currentButtonState) {
     case ButtonState::BTN_UP:
@@ -325,7 +376,8 @@ void setup() {
   motorSpeed = 200;
 
 //  readSettingsESP();
-//  setupWiFi();
+    setupWiFi();
+    setupMQTTClient();
 //  writeSettingsESP();
 //  setupStepper();
   
@@ -333,11 +385,16 @@ void setup() {
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   timer1_write(600000);
 
-  attachInterrupt(REED_UP, stop, CHANGE);
-  attachInterrupt(REED_DOWN, stop, CHANGE);
+  attachInterrupt(REED_UP, onOpen, CHANGE);
+  attachInterrupt(REED_DOWN, onClosed, CHANGE);
 }
 
 void loop() {
+  if (!mqttClient.connected()) {
+    reconnectMqtt();
+  }
+  mqttClient.loop();
+
   driveMotor();
   return;
 
