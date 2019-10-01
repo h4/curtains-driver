@@ -9,7 +9,7 @@
 
 #define EEPROM_START 0
 
-#define MOTOR_PIN_1 1
+#define MOTOR_PIN_1 2 // Temporary switch from IO1 to IO2
 #define MOTOR_PIN_2 3
 #define MOTOR_PIN_3 5
 #define MOTOR_PIN_4 4
@@ -80,6 +80,8 @@ String config_topic = topicPrefix + "/config";
 
 int position_open = 100;
 int position_closed = 0;
+String payload_available = "online";
+String payload_not_available = "offline";
 String command_open = "OPEN";
 String command_close = "CLOSE";
 String command_stop = "STOP";
@@ -154,7 +156,6 @@ ICACHE_RAM_ATTR void stop() {
     Serial.println("Stop motor");
   }
   currentMotorState = MotorState::STOPPED;
-  return;
   stepper.stop();
   stepper.disableOutputs();
 }
@@ -162,9 +163,6 @@ ICACHE_RAM_ATTR void stop() {
 void roll(bool isReversed) {
   int speed = isReversed ? -motorSpeed : motorSpeed;
 
-  Serial.print("Drive with speed ");
-  Serial.println(speed);
-  return;
   stepper.enableOutputs();
   stepper.setSpeed(speed);
   stepper.runSpeed();
@@ -258,25 +256,7 @@ void reconnectMqtt() {
     if (mqttClient.connect(client_id.c_str())) {
       Serial.println("connected");
 
-      String config = "{\"state_topic\":\"" + state_topic + "\",\"availability_topic\":\"" + availability_topic + "\",\"command_topic\":\"" + command_topic + "\",\"position_topic\":\"" + position_topic + "\",\"device_class\":\"cover\",\"name\":\"" + device_name + "\"}";
-      
-      bool published = mqttClient.publish(config_topic.c_str(), config.c_str());
-      Serial.println(config.c_str());
-      Serial.println(sizeof(config.c_str()));
-
-      Serial.println("Published Config: ");
-      Serial.println(published);
-      if (published) {
-        Serial.println(config);
-      }
-      String payload = "online";
-      published = mqttClient.publish(availability_topic.c_str(), payload.c_str());
-      if (published) {
-        Serial.println(payload);
-      } else {
-        Serial.println("Can't publish");
-      }
-
+      bool published = mqttClient.publish(availability_topic.c_str(), payload_available.c_str());
       mqttClient.subscribe(command_topic.c_str());
     } else {
       Serial.print("failed, rc=");
@@ -364,6 +344,18 @@ void driveMotor() {
     case ButtonState::BTN_UP_LONG:
       break;
   }
+
+  switch (currentMotorState) {
+    case MotorState::DRIVE_UP:
+      roll(false);
+      break;
+    case MotorState::DRIVE_DOWN:
+      roll(true);
+      break;
+    
+    default:
+      break;
+  }
 }
 
 void ICACHE_RAM_ATTR onTimerISR() {
@@ -389,7 +381,15 @@ void setup() {
   attachInterrupt(REED_DOWN, onClosed, CHANGE);
 }
 
+int prewTimer = 0;
+
 void loop() {
+  int now = millis();
+  if (now - prewTimer > 2000) {
+    Serial.println(stepper.currentPosition());
+    prewTimer = now;
+  }
+
   if (!mqttClient.connected()) {
     reconnectMqtt();
   }
