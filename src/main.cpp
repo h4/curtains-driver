@@ -6,10 +6,11 @@
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ArduinoOTA.h>
 
 #define EEPROM_START 0
 
-#define MOTOR_PIN_1 2 // Temporary switch from IO1 to IO2
+#define MOTOR_PIN_1 2
 #define MOTOR_PIN_2 3
 #define MOTOR_PIN_3 5
 #define MOTOR_PIN_4 4
@@ -237,6 +238,45 @@ void mqttCallback(char* topic, byte* payload, int length) {
   }
 }
 
+void setupOta() {
+  ArduinoOTA.onStart([]() {
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH) {
+      type = "sketch";
+    } else { // U_FS
+      type = "filesystem";
+    }
+    timer1_detachInterrupt();
+
+    // NOTE: if updating FS this would be the place to unmount FS using FS.end()
+    Serial.println("Start updating " + type);
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) {
+      Serial.println("Auth Failed");
+    } else if (error == OTA_BEGIN_ERROR) {
+      Serial.println("Begin Failed");
+    } else if (error == OTA_CONNECT_ERROR) {
+      Serial.println("Connect Failed");
+    } else if (error == OTA_RECEIVE_ERROR) {
+      Serial.println("Receive Failed");
+    } else if (error == OTA_END_ERROR) {
+      Serial.println("End Failed");
+    }
+  });
+
+  ArduinoOTA.begin();
+}
+
 void setupMQTTClient() {
   // mqttClient.setServer(eeprom_data.mqtt_server, atoi(eeprom_data.mqtt_port));
   mqttClient.setServer("192.168.2.100", 1883);
@@ -364,14 +404,22 @@ void ICACHE_RAM_ATTR onTimerISR() {
 }
 
 void setup() {
-  Serial.begin(115200);
-  motorSpeed = 200;
+  Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
+  motorSpeed = 2000.0;
+  Serial.println("BEGIN SETUP");
 
-//  readSettingsESP();
-    setupWiFi();
-    setupMQTTClient();
-//  writeSettingsESP();
-//  setupStepper();
+  readSettingsESP();
+  setupWiFi();
+  writeSettingsESP();
+
+  setupMQTTClient();
+  setupOta();
+
+  Serial.println("CONTINUE SETUP");
+
+  // setupStepper();
+  stepper.setMaxSpeed(1000.0);
+  motorSpeed = 500.0;
   
   timer1_attachInterrupt(onTimerISR);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
@@ -384,9 +432,11 @@ void setup() {
 int prewTimer = 0;
 
 void loop() {
+  ArduinoOTA.handle();
+
   int now = millis();
   if (now - prewTimer > 2000) {
-    Serial.println(stepper.currentPosition());
+    // Serial.println(stepper.currentPosition());
     prewTimer = now;
   }
 
@@ -397,17 +447,4 @@ void loop() {
 
   driveMotor();
   return;
-
-  switch (prevDriveDirection) {
-  case DriveDirection::DRIVE_UP:
-    rollUp();
-    break;
-
-  case DriveDirection::DRIVE_DOWN:
-    rollDown();
-    break;
-  
-  default:
-    break;
-  }
 }
