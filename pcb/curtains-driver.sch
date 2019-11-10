@@ -469,9 +469,9 @@ Wire Wire Line
 Wire Wire Line
 	8700 5050 8700 5800
 Wire Wire Line
-	9050 3800 9050 4350
+	8975 3800 8975 4350
 Wire Wire Line
-	9150 3800 9150 4450
+	9075 3800 9075 4350
 $Comp
 L Switch:SW_SPST SW6
 U 1 1 5C1F546E
@@ -573,19 +573,13 @@ Wire Wire Line
 Wire Wire Line
 	9850 5850 9850 5150
 Wire Wire Line
-	8650 4650 9450 4650
+	8650 4650 9200 4650
 Wire Wire Line
-	8650 4550 9450 4550
+	8650 4550 9150 4550
 Wire Wire Line
-	8650 4450 9150 4450
+	8650 4450 9075 4450
 Wire Wire Line
-	9150 4450 9450 4450
-Connection ~ 9150 4450
-Wire Wire Line
-	8650 4350 8800 4350
-Wire Wire Line
-	9050 4350 9450 4350
-Connection ~ 9050 4350
+	8650 4350 8750 4350
 Wire Wire Line
 	9850 5150 9850 4850
 Connection ~ 9850 5150
@@ -783,9 +777,9 @@ F 3 "~" H 1600 3100 50  0001 C CNN
 	1    1450 3150
 	1    0    0    -1  
 $EndComp
-Text GLabel 9050 3800 1    50   Input ~ 0
+Text GLabel 8975 3800 1    50   Input ~ 0
 TXD
-Text GLabel 9150 3800 1    50   Input ~ 0
+Text GLabel 9075 3800 1    50   Input ~ 0
 RXD
 Text GLabel 3750 2950 2    50   Input ~ 0
 TXD
@@ -940,7 +934,7 @@ Wire Wire Line
 Wire Wire Line
 	1750 3250 2500 3250
 $Comp
-L Device:Crystal_GND24_Small Y1
+L curtains-driver-rescue:Crystal_GND24_Small-Device Y1
 U 1 1 5C2E463A
 P 2200 3650
 F 0 "Y1" H 2200 3918 50  0000 C CNN
@@ -1152,23 +1146,23 @@ Wire Wire Line
 $Comp
 L Device:R R14
 U 1 1 5C37AADA
-P 8800 4100
-F 0 "R14" H 8600 4050 50  0000 L CNN
-F 1 "10K" H 8600 4150 50  0000 L CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 8730 4100 50  0001 C CNN
-F 3 "~" H 8800 4100 50  0001 C CNN
-	1    8800 4100
+P 8750 4100
+F 0 "R14" H 8550 4050 50  0000 L CNN
+F 1 "10K" H 8550 4150 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 8680 4100 50  0001 C CNN
+F 3 "~" H 8750 4100 50  0001 C CNN
+	1    8750 4100
 	-1   0    0    1   
 $EndComp
-Text GLabel 8800 3800 1    50   Input ~ 0
+Text GLabel 8750 3800 1    50   Input ~ 0
 VCC
 Wire Wire Line
-	8800 4250 8800 4350
-Connection ~ 8800 4350
+	8750 4250 8750 4350
+Connection ~ 8750 4350
 Wire Wire Line
-	8800 4350 9050 4350
+	8750 4350 8975 4350
 Wire Wire Line
-	8800 3800 8800 3950
+	8750 3800 8750 3950
 NoConn ~ 2200 3525
 Wire Wire Line
 	1900 3650 2100 3650
@@ -1287,4 +1281,24 @@ F 3 "http://www.unisonic.com.tw/datasheet/S8050.pdf" H 4350 3400 50  0001 L CNN
 	1    4350 3400
 	1    0    0    -1  
 $EndComp
+Connection ~ 9100 4850
+Wire Wire Line
+	9450 4350 9075 4350
+Connection ~ 9075 4350
+Wire Wire Line
+	9075 4350 9075 4450
+Wire Wire Line
+	9150 4550 9150 4450
+Wire Wire Line
+	9150 4450 9450 4450
+Wire Wire Line
+	9200 4650 9200 4550
+Wire Wire Line
+	9200 4550 9450 4550
+Wire Wire Line
+	9275 4850 9275 4650
+Wire Wire Line
+	9275 4650 9450 4650
+Wire Wire Line
+	9100 4850 9275 4850
 $EndSCHEMATC
