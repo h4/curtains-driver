@@ -184,13 +184,17 @@ void rollDown() {
 }
 
 ICACHE_RAM_ATTR void onOpen() {
-  stop();
+  if (currentMotorState == MotorState::DRIVE_UP) {
+    stop();
+  }
   char buffer [3];
   mqttClient.publish(position_topic.c_str(), itoa(position_open, buffer, 10));
 }
 
 ICACHE_RAM_ATTR void onClosed() {
-  stop();
+  if (currentMotorState == MotorState::DRIVE_DOWN) {
+    stop();
+  }
   char buffer [3];
   mqttClient.publish(position_topic.c_str(), itoa(position_closed, buffer, 10));
 }
@@ -425,8 +429,8 @@ void setup() {
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   timer1_write(600000);
 
-  attachInterrupt(REED_UP, onOpen, CHANGE);
-  attachInterrupt(REED_DOWN, onClosed, CHANGE);
+  attachInterrupt(REED_UP, onOpen, RISING);
+  attachInterrupt(REED_DOWN, onClosed, RISING);
 }
 
 int prewTimer = 0;
