@@ -24,6 +24,7 @@ PubSubClient mqttClient(wifiClient);
 enum class ButtonState {BTN_UP, BTN_DOWN, BTN_NONE, BTN_UP_LONG, BTN_DOWN_LONG, BTN_RELEASE_LONG};
 enum class MotorState {DRIVE_UP, DRIVE_DOWN, STOPPED};
 enum class DriveDirection {DRIVE_UP, DRIVE_DOWN, DRIVE_NONE};
+enum class EdgePosition {TOP, BOTTOM, MIDDLE};
 
 boolean setEEPROM = false;
 uint32_t memcrc; 
@@ -146,6 +147,7 @@ void configModeCallback (WiFiManager *myWiFiManager) {}
 
 MotorState currentMotorState = MotorState::STOPPED;
 DriveDirection prevDriveDirection = DriveDirection::DRIVE_NONE;
+EdgePosition rollState;
 
 void setupStepper() {
   stepper.setMaxSpeed(1000.0);
@@ -173,12 +175,18 @@ void rollUp() {
   if (currentMotorState != MotorState::DRIVE_UP) {
     roll(false);
   }
+  if (rollState == EdgePosition::BOTTOM) {
+    rollState = EdgePosition::MIDDLE;
+  }
   currentMotorState = MotorState::DRIVE_UP;
 }
 
 void rollDown() {
   if (currentMotorState != MotorState::DRIVE_DOWN) {
     roll(true);
+  }
+  if (rollState == EdgePosition::TOP) {
+    rollState = EdgePosition::MIDDLE;
   }
   currentMotorState = MotorState::DRIVE_DOWN;
 }
@@ -187,6 +195,8 @@ ICACHE_RAM_ATTR void onOpen() {
   if (currentMotorState == MotorState::DRIVE_UP) {
     stop();
   }
+
+  rollState = EdgePosition::TOP;
   char buffer [3];
   mqttClient.publish(position_topic.c_str(), itoa(position_open, buffer, 10));
 }
@@ -195,6 +205,8 @@ ICACHE_RAM_ATTR void onClosed() {
   if (currentMotorState == MotorState::DRIVE_DOWN) {
     stop();
   }
+
+  rollState = EdgePosition::BOTTOM;
   char buffer [3];
   mqttClient.publish(position_topic.c_str(), itoa(position_closed, buffer, 10));
 }
@@ -372,11 +384,11 @@ ButtonState getControlButtonState() {
 void driveMotor() {
   switch (currentButtonState) {
     case ButtonState::BTN_UP:
-      rollUp();
+      if (rollState != EdgePosition::TOP) rollUp();
       break;
 
     case ButtonState::BTN_DOWN:
-      rollDown();
+      if (rollState != EdgePosition::BOTTOM) rollDown();
       break;
 
     case ButtonState::BTN_RELEASE_LONG:
