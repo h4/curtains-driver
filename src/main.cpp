@@ -7,6 +7,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoOTA.h>
+#include <crc.h>
 
 #define EEPROM_START 0
 
@@ -26,6 +27,13 @@ enum class MotorState {DRIVE_UP, DRIVE_DOWN, STOPPED};
 enum class DriveDirection {DRIVE_UP, DRIVE_DOWN, DRIVE_NONE};
 enum class EdgePosition {TOP, BOTTOM, MIDDLE};
 
+String device_name = "Cover_" + String(ESP.getChipId());
+String topicPrefix = "home/covers/" + device_name;
+
+String availability_topic = topicPrefix + "/availability";
+String command_topic = topicPrefix + "/set";
+String position_topic = topicPrefix + "/position";
+
 boolean setEEPROM = false;
 uint32_t memcrc; 
 uint8_t *p_memcrc = (uint8_t*)&memcrc;
@@ -36,66 +44,30 @@ struct eeprom_data_t {
   char motor_speed[4];
 } eeprom_data;
 
-static  uint32_t crc_table[16] = {
-  0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
-  0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
-};
-
-unsigned long crc_update(unsigned long crc, byte data) {
-  byte tbl_idx;
-  tbl_idx = crc ^ (data >> (0 * 4));
-  crc = pgm_read_dword_near(crc_table + (tbl_idx & 0x0f)) ^ (crc >> 4);
-  tbl_idx = crc ^ (data >> (1 * 4));
-  crc = pgm_read_dword_near(crc_table + (tbl_idx & 0x0f)) ^ (crc >> 4);
-  return crc;
-}
-
-unsigned long crc_byte(byte *b, int len) {
-  unsigned long crc = ~0L;
-  uint16_t i;
-
-  for (i = 0 ; i < len ; i++)
-  {
-    crc = crc_update(crc, *b++);
-  }
-  crc = ~crc;
-  return crc;
-}
-
 ESP8266WebServer server(80);
 WiFiManager wifiManager;
 
 char default_mqtt_server[40] = "";
-char default_mqtt_port[6] = "8080";
+char default_mqtt_port[6] = "1883";
 char default_motor_speed[4] = "300";
 
-String device_name = "Cover_" + String(ESP.getChipId());
-String topicPrefix = "home/covers/" + device_name;
-
-String availability_topic = topicPrefix + "/availability";
-String command_topic = topicPrefix + "/set";
-String position_topic = topicPrefix + "/position";
-
-// TODO: this topics are unusual
-String state_topic = topicPrefix + "/buttonState";
-String config_topic = topicPrefix + "/config";
-
-int position_open = 100;
-int position_closed = 0;
+uint8_t position_open = 100;
+uint8_t position_closed = 0;
+uint8_t current_position = 50;
 String payload_available = "online";
 String payload_not_available = "offline";
 String command_open = "OPEN";
 String command_close = "CLOSE";
 String command_stop = "STOP";
 
-float motorSpeed;
+uint16_t motorSpeed;
 
 IPAddress MQTTserver;
 // Second and Third pins should be reversed to deal with 28BYJ-48
 AccelStepper stepper(AccelStepper::HALF4WIRE, MOTOR_PIN_1, MOTOR_PIN_3, MOTOR_PIN_2, MOTOR_PIN_4);
 
 void readSettingsESP() {
-int i;
+  uint16_t i;
   uint32_t datacrc;
   byte eeprom_data_tmp[sizeof(eeprom_data)];
 
@@ -123,7 +95,7 @@ int i;
 }
 
 void writeSettingsESP() {
-  int i;
+  uint16_t i;
   byte eeprom_data_tmp[sizeof(eeprom_data)];
 
   EEPROM.begin(sizeof(eeprom_data) + sizeof(memcrc));
@@ -151,7 +123,7 @@ EdgePosition rollState;
 
 void setupStepper() {
   stepper.setMaxSpeed(1000.0);
-  motorSpeed = atof(eeprom_data.motor_speed);
+  motorSpeed = atoi(eeprom_data.motor_speed);
 }
 
 ICACHE_RAM_ATTR void stop() {
@@ -164,7 +136,12 @@ ICACHE_RAM_ATTR void stop() {
 }
 
 void roll(bool isReversed) {
-  int speed = isReversed ? -motorSpeed : motorSpeed;
+  int16_t speed = isReversed ? motorSpeed : -motorSpeed;
+  if (current_position != 50) {
+    current_position = 50;
+    char buffer [3];
+    mqttClient.publish(position_topic.c_str(), itoa(current_position, buffer, 10));
+  }
 
   stepper.enableOutputs();
   stepper.setSpeed(speed);
@@ -199,6 +176,7 @@ ICACHE_RAM_ATTR void onOpen() {
   rollState = EdgePosition::TOP;
   char buffer [3];
   mqttClient.publish(position_topic.c_str(), itoa(position_open, buffer, 10));
+  current_position = position_open;
 }
 
 ICACHE_RAM_ATTR void onClosed() {
@@ -209,6 +187,7 @@ ICACHE_RAM_ATTR void onClosed() {
   rollState = EdgePosition::BOTTOM;
   char buffer [3];
   mqttClient.publish(position_topic.c_str(), itoa(position_closed, buffer, 10));
+  current_position = position_closed;
 }
 
 void setupWiFi() {
@@ -216,7 +195,7 @@ void setupWiFi() {
 
   WiFiManager wifiManager;
   // Debug mode on
-  // ifiManager.resetSettings();
+  // wifiManager.resetSettings();
   wifiManager.setAPCallback(configModeCallback);
 
   WiFiManagerParameter custom_mqtt_server("server", "mqtt server", eeprom_data.mqtt_server, 40);
@@ -239,9 +218,9 @@ void setupWiFi() {
   WiFi.enableAP(0);
 }
 
-void mqttCallback(char* topic, byte* payload, int length) {
+void mqttCallback(char* topic, byte* payload, uint16_t length) {
   String command;
-  for (int i=0; i < length; i++) {
+  for (uint16_t i=0; i < length; i++) {
     command += (char)payload[i];
   }
 
@@ -264,14 +243,13 @@ void setupOta() {
     }
     timer1_detachInterrupt();
 
-    // NOTE: if updating FS this would be the place to unmount FS using FS.end()
     Serial.println("Start updating " + type);
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("\nEnd");
   });
 
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+  ArduinoOTA.onProgress([](uint32_t progress, uint32_t total) {
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
   });
 
@@ -312,7 +290,7 @@ void reconnectMqtt() {
     if (mqttClient.connect(client_id.c_str())) {
       Serial.println("connected");
 
-      bool published = mqttClient.publish(availability_topic.c_str(), payload_available.c_str());
+      mqttClient.publish(availability_topic.c_str(), payload_available.c_str());
       mqttClient.subscribe(command_topic.c_str());
     } else {
       Serial.print("failed, rc=");
@@ -324,14 +302,13 @@ void reconnectMqtt() {
   }
 }
 
-int prevAdc;
 ButtonState prevButtonState = ButtonState::BTN_NONE;
 ButtonState currentButtonState = ButtonState::BTN_NONE;
-long prevStateChange = millis();
+uint64_t prevStateChange = millis();
 bool longPressed = false;
 
 ButtonState getCurrentButtonState() {
-  int adc = analogRead(A0);
+  uint16_t adc = analogRead(A0);
 
   if (adc > 700) {
     return ButtonState::BTN_UP;
@@ -345,7 +322,7 @@ ButtonState getCurrentButtonState() {
 }
 
 ButtonState detectLongPress(ButtonState btnState) {
-  long now = millis();
+  uint64_t now = millis();
   if (prevButtonState != btnState) {
     if (longPressed) {
       btnState = ButtonState::BTN_RELEASE_LONG;
@@ -355,7 +332,7 @@ ButtonState detectLongPress(ButtonState btnState) {
     prevStateChange = now;
     prevButtonState = btnState;
   }
-  long delta = now - prevStateChange;
+  uint64_t delta = now - prevStateChange;
 
   if (delta > LONG_PRESS_TIMEOUT) {
     switch (btnState) {
@@ -441,20 +418,12 @@ void setup() {
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   timer1_write(600000);
 
-  attachInterrupt(REED_UP, onOpen, RISING);
-  attachInterrupt(REED_DOWN, onClosed, RISING);
+  attachInterrupt(REED_UP, onOpen, FALLING);
+  attachInterrupt(REED_DOWN, onClosed, FALLING);
 }
-
-int prewTimer = 0;
 
 void loop() {
   ArduinoOTA.handle();
-
-  int now = millis();
-  if (now - prewTimer > 2000) {
-    // Serial.println(stepper.currentPosition());
-    prewTimer = now;
-  }
 
   if (!mqttClient.connected()) {
     reconnectMqtt();
@@ -462,5 +431,4 @@ void loop() {
   mqttClient.loop();
 
   driveMotor();
-  return;
 }
